@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+
+        .tab:hover {
+            background: #f8f9fa;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .review-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .question-group {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .star {
+            font-size: 2rem;
+            cursor: pointer;
+            color: #ddd;
+            transition: color 0.2s ease;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #ffd700;
+        }
+
+        .rating-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .average-rating {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+        }
+
+        .success {
+            background: #efe;
+            color: #363;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #363;
+        }
+
+        .recent-reviews {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .review-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .reviewer-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .review-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .review-questions {
+            margin-bottom: 10px;
+        }
+
+        .question-rating {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            padding: 5px 0;
+        }
+
+        .question-text-small {
+            font-size: 0.9rem;
+            color: #555;
+            flex: 1;
+        }
+
+        .rating-display {
+            display: flex;
+            gap: 2px;
+        }
+
+        .star-small {
+            font-size: 0.8rem;
+            color: #ffd700;
+        }
+
+        .review-comments {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-style: italic;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                text-align: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⭐ Review System</h1>
+            <p>Share your feedback and see what others think</p>
+        </div>
+
+        <div class="content">
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('review')">Write Review</div>
+                <div class="tab" onclick="showTab('stats')">View Statistics</div>
+                <div class="tab" onclick="showTab('recent')">Recent Reviews</div>
+            </div>
+
+            <!-- Review Form Tab -->
+            <div id="review-tab" class="tab-content active">
+                <div class="review-form">
+                    <div id="questions-container">
+                        <div class="loading">Loading questions...</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reviewerName">Your Name (Optional)</label>
+                        <input type="text" id="reviewerName" placeholder="Enter your name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="comments">Additional Comments (Optional)</label>
+                        <textarea id="comments" placeholder="Share your thoughts..."></textarea>
+                    </div>
+
+                    <button class="submit-btn" onclick="submitReview()" id="submitBtn">Submit Review</button>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="stats-tab" class="tab-content">
+                <div id="stats-container">
+                    <div class="loading">Loading statistics...</div>
+                </div>
+            </div>
+
+            <!-- Recent Reviews Tab -->
+            <div id="recent-tab" class="tab-content">
+                <div id="recent-container">
+                    <div class="loading">Loading recent reviews...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentRatings = {};
+
+        // Tab functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+
+            // Load data for the tab
+            if (tabName === 'stats') {
+                loadStats();
+            } else if (tabName === 'recent') {
+                loadRecentReviews();
+            }
+        }
+
+        // Load questions for the review form
+        async function loadQuestions() {
+            try {
+                const response = await fetch('/api/reviews/questions');
+                const data = await response.json();
+                
+                if (data.success) {
+                    questions = data.data;
+                    renderQuestions();
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                document.getElementById('questions-container').innerHTML = 
+                    `<div class="error">Error loading questions: ${error.message}</div>`;
+            }
+        }
+
+        // Render questions in the form
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            
+            if (questions.length === 0) {
+                container.innerHTML = '<div class="error">No questions available</div>';
+                return;
+            }
+
+            container.innerHTML = questions.map(question => `
+                <div class="question-group">
+                    <div class="question-text">${question.questionText}</div>
+                    <div class="star-rating" data-question-id="${question.questionId}">
+                        ${[1, 2, 3, 4, 5].map(star => `
+                            <span class="star" data-rating="${star}" onclick="setRating('${question.questionId}', ${star})">★</span>
+                        `).join('')}
+                    </div>
+                    <div class="rating-label">Click to rate from 1 to 5 stars</div>
+                </div>
+            `).join('');
+        }
+
+        // Set rating for a question
+        function setRating(questionId, rating) {
+            currentRatings[questionId] = rating;
+            
+            // Update star display
+            const starContainer = document.querySelector(`[data-question-id="${questionId}"]`);
+            const stars = starContainer.querySelectorAll('.star');
+            
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+
+            // Enable submit button if all questions are rated
+            checkFormCompletion();
+        }
+
+        // Check if all questions are rated
+        function checkFormCompletion() {
+            const allRated = questions.every(q => currentRatings[q.questionId]);
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (allRated) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Review';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Please rate all questions';
+            }
+        }
+
+        // Submit review
+        async function submitReview() {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const reviewData = {
+                    questions: questions.map(q => ({
+                        questionId: q.questionId,
+                        questionText: q.questionText,
+                        rating: currentRatings[q.questionId]
+                    })),
+                    reviewerName: document.getElementById('reviewerName').value.trim(),
+                    comments: document.getElementById('comments').value.trim()
+                };
+
+                const response = await fetch('/api/reviews/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(reviewData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success message
+                    const container = document.getElementById('questions-container');
+                    container.innerHTML = `
+                        <div class="success">
+                            <h3>Thank you for your review!</h3>
+                            <p>Your feedback has been submitted successfully.</p>
+                            <button onclick="resetForm()" style="margin-top: 10px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Submit Another Review</button>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                const container = document.getElementById('questions-container');
+                container.innerHTML = `
+                    <div class="error">Error submitting review: ${error.message}</div>
+                    <button onclick="loadQuestions()" style="margin-top: 10px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Try Again</button>
+                `;
+            }
+        }
+
+        // Reset form after successful submission
+        function resetForm() {
+            currentRatings = {};
+            document.getElementById('reviewerName').value = '';
+            document.getElementById('comments').value = '';
+            loadQuestions();
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/reviews/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderStats(data.data);
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                document.getElementById('stats-container').innerHTML = 
+                    `<div class="error">Error loading statistics: ${error.message}</div>`;
+            }
+        }
+
+        // Render statistics
+        function renderStats(stats) {
+            const container = document.getElementById('stats-container');
+            
+            if (stats.totalReviews === 0) {
+                container.innerHTML = `
+                    <div class="stat-card">
+                        <h3>No Reviews Yet</h3>
+                        <p>Be the first to leave a review!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const questionsHtml = stats.questions.map(question => `
+                <div class="stat-card">
+                    <h3>${question.questionText}</h3>
+                    <div class="average-rating">${question.averageRating}/5</div>
+                    <div class="chart-container">
+                        <canvas id="chart-${question.questionId}"></canvas>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="stat-card">
+                    <h3>Overall Statistics</h3>
+                    <div class="average-rating">${stats.totalReviews} Total Reviews</div>
+                </div>
+                <div class="stats-grid">
+                    ${questionsHtml}
+                </div>
+            `;
+
+            // Create charts
+            stats.questions.forEach(question => {
+                createChart(question);
+            });
+        }
+
+        // Create chart for a question
+        function createChart(question) {
+            const ctx = document.getElementById(`chart-${question.questionId}`).getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['1 Star', '2 Stars', '3 Stars', '4 Stars', '5 Stars'],
+                    datasets: [{
+                        label: 'Number of Ratings',
+                        data: [
+                            question.ratingDistribution[1],
+                            question.ratingDistribution[2],
+                            question.ratingDistribution[3],
+                            question.ratingDistribution[4],
+                            question.ratingDistribution[5]
+                        ],
+                        backgroundColor: [
+                            '#ff6b6b',
+                            '#ffa726',
+                            '#ffd54f',
+                            '#66bb6a',
+                            '#42a5f5'
+                        ],
+                        borderColor: [
+                            '#d32f2f',
+                            '#f57c00',
+                            '#fbc02d',
+                            '#388e3c',
+                            '#1976d2'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load recent reviews
+        async function loadRecentReviews() {
+            try {
+                const response = await fetch('/api/reviews/recent');
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderRecentReviews(data.data);
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                document.getElementById('recent-container').innerHTML = 
+                    `<div class="error">Error loading recent reviews: ${error.message}</div>`;
+            }
+        }
+
+        // Render recent reviews
+        function renderRecentReviews(reviews) {
+            const container = document.getElementById('recent-container');
+            
+            if (reviews.length === 0) {
+                container.innerHTML = `
+                    <div class="review-item">
+                        <p>No reviews yet. Be the first to leave a review!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const reviewsHtml = reviews.map(review => {
+                const questionsHtml = review.questions.map(q => `
+                    <div class="question-rating">
+                        <span class="question-text-small">${q.questionText}</span>
+                        <div class="rating-display">
+                            ${Array(5).fill().map((_, i) => 
+                                `<span class="star-small">${i < q.rating ? '★' : '☆'}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="review-item">
+                        <div class="review-header">
+                            <span class="reviewer-name">${review.reviewerName || 'Anonymous'}</span>
+                            <span class="review-date">${new Date(review.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div class="review-questions">
+                            ${questionsHtml}
+                        </div>
+                        ${review.comments ? `<div class="review-comments">"${review.comments}"</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="recent-reviews">
+                    ${reviewsHtml}
+                </div>
+            `;
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadQuestions();
+            checkFormCompletion();
+        });
+    </script>
+</body>
+</html> 

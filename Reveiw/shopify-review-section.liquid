@@ -1,0 +1,956 @@
+{% comment %}
+  Review System Section for Shopify
+  This section allows customers to submit star ratings for configurable questions
+  Questions can be managed from Shopify admin through metafields or settings
+{% endcomment %}
+
+{% assign review_api_url = section.settings.api_url | default: 'http://localhost:3000/' %}
+{% assign show_statistics = section.settings.show_statistics %}
+{% assign show_recent_reviews = section.settings.show_recent_reviews %}
+{% assign max_recent_reviews = section.settings.max_recent_reviews | default: 5 %}
+
+<style>
+  .review-system {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    font-family: {{ settings.font_family }};
+  }
+
+  .review-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .review-header h2 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    color: {{ settings.color_primary }};
+  }
+
+  .review-header p {
+    font-size: 1.1rem;
+    color: {{ settings.color_text }};
+    opacity: 0.8;
+  }
+
+  .review-tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid {{ settings.color_border }};
+  }
+
+  .review-tab {
+    padding: 15px 30px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    color: {{ settings.color_text }};
+  }
+
+  .review-tab.active {
+    border-bottom-color: {{ settings.color_primary }};
+    color: {{ settings.color_primary }};
+  }
+
+  .review-tab:hover {
+    background: {{ settings.color_background_secondary }};
+  }
+
+  .review-content {
+    display: none;
+  }
+
+  .review-content.active {
+    display: block;
+  }
+
+  .review-form {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .question-group {
+    margin-bottom: 30px;
+    padding: 25px;
+    background: {{ settings.color_background_secondary }};
+    border-radius: 15px;
+    border-left: 4px solid {{ settings.color_primary }};
+  }
+
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    color: {{ settings.color_text }};
+  }
+
+  .star-rating {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+
+  .star {
+    font-size: 2rem;
+    cursor: pointer;
+    color: #ddd;
+    transition: color 0.2s ease;
+  }
+
+  .star:hover,
+  .star.active {
+    color: #ffd700;
+  }
+
+  .rating-label {
+    font-size: 0.9rem;
+    color: {{ settings.color_text }};
+    opacity: 0.7;
+    margin-top: 5px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: {{ settings.color_text }};
+  }
+
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid {{ settings.color_border }};
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    background: {{ settings.color_background }};
+    color: {{ settings.color_text }};
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: {{ settings.color_primary }};
+  }
+
+  .form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  .submit-btn {
+    background: {{ settings.color_primary }};
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    width: 100%;
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+    background: {{ settings.color_primary | color_darken: 10 }};
+  }
+
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
+  }
+
+  .stat-card {
+    background: {{ settings.color_background }};
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-left: 4px solid {{ settings.color_primary }};
+  }
+
+  .stat-card h3 {
+    color: {{ settings.color_text }};
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+  }
+
+  .average-rating {
+    font-size: 2rem;
+    font-weight: bold;
+    color: {{ settings.color_primary }};
+    text-align: center;
+    margin: 10px 0;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 300px;
+    margin-top: 20px;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: {{ settings.color_text }};
+    opacity: 0.7;
+  }
+
+  .error {
+    background: #fee;
+    color: #c33;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #c33;
+  }
+
+  .success {
+    background: #efe;
+    color: #363;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #363;
+  }
+
+  .recent-reviews {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .review-item {
+    background: {{ settings.color_background_secondary }};
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    border-left: 4px solid {{ settings.color_primary }};
+  }
+
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .reviewer-name {
+    font-weight: 500;
+    color: {{ settings.color_text }};
+  }
+
+  .review-date {
+    color: {{ settings.color_text }};
+    opacity: 0.7;
+    font-size: 0.9rem;
+  }
+
+  .review-questions {
+    margin-bottom: 10px;
+  }
+
+  .question-rating {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    padding: 5px 0;
+  }
+
+  .question-text-small {
+    font-size: 0.9rem;
+    color: {{ settings.color_text }};
+    opacity: 0.8;
+    flex: 1;
+  }
+
+  .rating-display {
+    display: flex;
+    gap: 2px;
+  }
+
+  .star-small {
+    font-size: 0.8rem;
+    color: #ffd700;
+  }
+
+  .review-comments {
+    background: {{ settings.color_background }};
+    padding: 10px;
+    border-radius: 5px;
+    font-style: italic;
+    color: {{ settings.color_text }};
+    opacity: 0.8;
+  }
+
+  @media (max-width: 768px) {
+    .review-header h2 {
+      font-size: 2rem;
+    }
+
+    .review-tabs {
+      flex-direction: column;
+    }
+
+    .review-tab {
+      text-align: center;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  body, .container, .header, .content, .review-form, .question-group, .question-text, .star-rating, .tab, .tab-content, .form-group, .rating-label, .stat-card, .recent-reviews, .review-item {
+    font-size: 1.25rem !important; /* Makes all text bigger */
+  }
+
+  .submit-btn {
+    background: #222 !important;   /* Dark button */
+    color: #fff !important;
+    font-size: 1.25rem !important; /* Bigger button text */
+    font-weight: 700;
+  }
+
+  .submit-btn:hover {
+    background: #111 !important;
+  }
+</style>
+
+<div class="review-system">
+  <div class="review-header">
+    <h2>{{ section.settings.title | default: '⭐ Customer Reviews' }}</h2>
+    <p>{{ section.settings.subtitle | default: 'Share your feedback and see what others think' }}</p>
+  </div>
+
+  <div class="review-tabs">
+    <div class="review-tab active" onclick="showReviewTab('review')">{{ section.settings.tab_review_text | default: 'Write Review' }}</div>
+    {% if show_statistics %}
+      <div class="review-tab" onclick="showReviewTab('stats')">{{ section.settings.tab_stats_text | default: 'View Statistics' }}</div>
+    {% endif %}
+    {% if show_recent_reviews %}
+      <div class="review-tab" onclick="showReviewTab('recent')">{{ section.settings.tab_recent_text | default: 'Recent Reviews' }}</div>
+    {% endif %}
+  </div>
+
+  <!-- Review Form Tab -->
+  <div id="review-tab" class="review-content active">
+    <div class="review-form">
+      <div id="questions-container">
+        <div class="loading">Loading questions...</div>
+      </div>
+
+      <button class="submit-btn" onclick="submitReview()" id="submitBtn">{{ section.settings.submit_button_text | default: 'Submit Review' }}</button>
+    </div>
+  </div>
+
+  <!-- Statistics Tab -->
+  {% if show_statistics %}
+    <div id="stats-tab" class="review-content">
+      <div id="stats-container">
+        <div class="loading">Loading statistics...</div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Recent Reviews Tab -->
+  {% if show_recent_reviews %}
+    <div id="recent-tab" class="review-content">
+      <div id="recent-container">
+        <div class="loading">Loading recent reviews...</div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  let questions = [];
+  let currentRatings = {};
+  const API_BASE_URL = '{{ review_api_url }}';
+
+  // Tab functionality
+  function showReviewTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.review-content').forEach(content => {
+      content.classList.remove('active');
+    });
+
+    // Remove active class from all tabs
+    document.querySelectorAll('.review-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+
+    // Show selected tab content
+    document.getElementById(tabName + '-tab').classList.add('active');
+
+    // Add active class to clicked tab
+    event.target.classList.add('active');
+
+    // Load data for the tab
+    if (tabName === 'stats') {
+      loadStats();
+    } else if (tabName === 'recent') {
+      loadRecentReviews();
+    }
+  }
+
+  // Load questions for the review form
+  async function loadQuestions() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/reviews/questions`);
+      const data = await response.json();
+      
+      if (data.success) {
+        questions = data.data;
+        renderQuestions();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      document.getElementById('questions-container').innerHTML = 
+        `<div class="error">Error loading questions: ${error.message}</div>`;
+    }
+  }
+
+  // Render questions in the form
+  function renderQuestions() {
+    const container = document.getElementById('questions-container');
+    
+    if (questions.length === 0) {
+      container.innerHTML = '<div class="error">No questions available</div>';
+      return;
+    }
+
+    container.innerHTML = questions.map(question => `
+      <div class="question-group">
+        <div class="question-text">${question.questionText}</div>
+        <div class="star-rating" data-question-id="${question.questionId}">
+          ${[1, 2, 3, 4, 5].map(star => `
+            <span class="star" data-rating="${star}" onclick="setRating('${question.questionId}', ${star})">★</span>
+          `).join('')}
+        </div>
+        <div class="rating-label">Click to rate from 1 to 5 stars</div>
+      </div>
+    `).join('');
+  }
+
+  // Set rating for a question
+  function setRating(questionId, rating) {
+    currentRatings[questionId] = rating;
+    
+    // Update star display
+    const starContainer = document.querySelector(`[data-question-id="${questionId}"]`);
+    const stars = starContainer.querySelectorAll('.star');
+    
+    stars.forEach((star, index) => {
+      if (index < rating) {
+        star.classList.add('active');
+      } else {
+        star.classList.remove('active');
+      }
+    });
+
+    // Enable submit button if all questions are rated
+    checkFormCompletion();
+  }
+
+  // Check if all questions are rated
+  function checkFormCompletion() {
+    const allRated = questions.every(q => currentRatings[q.questionId]);
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (allRated) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '{{ section.settings.submit_button_text | default: "Submit Review" }}';
+    } else {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '{{ section.settings.please_rate_text | default: "Please rate all questions" }}';
+    }
+  }
+
+  // Submit review
+  async function submitReview() {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '{{ section.settings.submitting_text | default: "Submitting..." }}';
+
+    try {
+      const reviewData = {
+        questions: [
+          { questionId: "question1", questionText: "{{ section.settings.question1 }}", rating: 5 },
+          { questionId: "question2", questionText: "{{ section.settings.question2 }}", rating: 4 },
+          { questionId: "question3", questionText: "{{ section.settings.question2 }}", rating: 4 },
+          { questionId: "question4", questionText: "{{ section.settings.question2 }}", rating: 4 },
+          { questionId: "question5", questionText: "{{ section.settings.question2 }}", rating: 4 },
+        ]
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/reviews/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(reviewData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Show success message
+        const container = document.getElementById('questions-container');
+        container.innerHTML = `
+          <div class="success">
+            <h3>{{ section.settings.success_title | default: "Thank you for your review!" }}</h3>
+            <p>{{ section.settings.success_message | default: "Your feedback has been submitted successfully." }}</p>
+            <button onclick="resetForm()" style="margin-top: 10px; padding: 10px 20px; background: {{ settings.color_primary }}; color: white; border: none; border-radius: 5px; cursor: pointer;">{{ section.settings.submit_another_text | default: "Submit Another Review" }}</button>
+          </div>
+        `;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = `
+        <div class="error">Error submitting review: ${error.message}</div>
+        <button onclick="loadQuestions()" style="margin-top: 10px; padding: 10px 20px; background: {{ settings.color_primary }}; color: white; border: none; border-radius: 5px; cursor: pointer;">{{ section.settings.try_again_text | default: "Try Again" }}</button>
+      `;
+    }
+  }
+
+  // Reset form after successful submission
+  function resetForm() {
+    currentRatings = {};
+    loadQuestions();
+  }
+
+  // Load statistics
+  async function loadStats() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/reviews/stats`);
+      const data = await response.json();
+      
+      if (data.success) {
+        renderStats(data.data);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      document.getElementById('stats-container').innerHTML = 
+        `<div class="error">Error loading statistics: ${error.message}</div>`;
+    }
+  }
+
+  // Render statistics
+  function renderStats(stats) {
+    const container = document.getElementById('stats-container');
+    
+    if (stats.totalReviews === 0) {
+      container.innerHTML = `
+        <div class="stat-card">
+          <h3>{{ section.settings.no_reviews_title | default: "No Reviews Yet" }}</h3>
+          <p>{{ section.settings.no_reviews_message | default: "Be the first to leave a review!" }}</p>
+        </div>
+      `;
+      return;
+    }
+
+    const questionsHtml = stats.questions.map(question => `
+      <div class="stat-card">
+        <h3>${question.questionText}</h3>
+        <div class="average-rating">${question.averageRating}/5</div>
+        <div class="chart-container">
+          <canvas id="chart-${question.questionId}"></canvas>
+        </div>
+      </div>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="stat-card">
+        <h3>{{ section.settings.overall_stats_title | default: "Overall Statistics" }}</h3>
+        <div class="average-rating">${stats.totalReviews} {{ section.settings.total_reviews_text | default: "Total Reviews" }}</div>
+      </div>
+      <div class="stats-grid">
+        ${questionsHtml}
+      </div>
+    `;
+
+    // Create charts
+    stats.questions.forEach(question => {
+      createChart(question);
+    });
+  }
+
+  // Create chart for a question
+  function createChart(question) {
+    const ctx = document.getElementById(`chart-${question.questionId}`).getContext('2d');
+    
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['1 Star', '2 Stars', '3 Stars', '4 Stars', '5 Stars'],
+        datasets: [{
+          label: 'Number of Ratings',
+          data: [
+            question.ratingDistribution[1],
+            question.ratingDistribution[2],
+            question.ratingDistribution[3],
+            question.ratingDistribution[4],
+            question.ratingDistribution[5]
+          ],
+          backgroundColor: [
+            '#ff6b6b',
+            '#ffa726',
+            '#ffd54f',
+            '#66bb6a',
+            '#42a5f5'
+          ],
+          borderColor: [
+            '#d32f2f',
+            '#f57c00',
+            '#fbc02d',
+            '#388e3c',
+            '#1976d2'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+  }
+
+  // Load recent reviews
+  async function loadRecentReviews() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/reviews/recent`);
+      const data = await response.json();
+      
+      if (data.success) {
+        renderRecentReviews(data.data);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      document.getElementById('recent-container').innerHTML = 
+        `<div class="error">Error loading recent reviews: ${error.message}</div>`;
+    }
+  }
+
+  // Render recent reviews
+  function renderRecentReviews(reviews) {
+    const container = document.getElementById('recent-container');
+    const maxReviews = {{ max_recent_reviews }};
+    const limitedReviews = reviews.slice(0, maxReviews);
+    
+    if (limitedReviews.length === 0) {
+      container.innerHTML = `
+        <div class="review-item">
+          <p>{{ section.settings.no_recent_reviews_text | default: "No reviews yet. Be the first to leave a review!" }}</p>
+        </div>
+      `;
+      return;
+    }
+
+    const reviewsHtml = limitedReviews.map(review => {
+      const questionsHtml = review.questions.map(q => `
+        <div class="question-rating">
+          <span class="question-text-small">${q.questionText}</span>
+          <div class="rating-display">
+            ${Array(5).fill().map((_, i) => 
+              `<span class="star-small">${i < q.rating ? '★' : '☆'}</span>`
+            ).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      return `
+        <div class="review-item">
+          <div class="review-header">
+            <span class="reviewer-name">${review.reviewerName || '{{ section.settings.anonymous_text | default: "Anonymous" }}'}</span>
+            <span class="review-date">${new Date(review.createdAt).toLocaleDateString()}</span>
+          </div>
+          <div class="review-questions">
+            ${questionsHtml}
+          </div>
+          ${review.comments ? `<div class="review-comments">"${review.comments}"</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="recent-reviews">
+        ${reviewsHtml}
+      </div>
+    `;
+  }
+
+  // Initialize the app
+  document.addEventListener('DOMContentLoaded', function() {
+    loadQuestions();
+    checkFormCompletion();
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Review System",
+  "settings": [
+    {
+      "type": "header",
+      "content": "API Configuration"
+    },
+    {
+      "type": "text",
+      "id": "api_url",
+      "label": "API Base URL",
+      "default": "https://your-api-domain.com",
+      "info": "Enter the base URL of your review system API"
+    },
+    {
+      "type": "header",
+      "content": "Display Options"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_statistics",
+      "label": "Show Statistics Tab",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_recent_reviews",
+      "label": "Show Recent Reviews Tab",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "max_recent_reviews",
+      "label": "Maximum Recent Reviews to Show",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title",
+      "default": "⭐ Customer Reviews"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Section Subtitle",
+      "default": "Share your feedback and see what others think"
+    },
+    {
+      "type": "header",
+      "content": "Tab Labels"
+    },
+    {
+      "type": "text",
+      "id": "tab_review_text",
+      "label": "Review Tab Text",
+      "default": "Write Review"
+    },
+    {
+      "type": "text",
+      "id": "tab_stats_text",
+      "label": "Statistics Tab Text",
+      "default": "View Statistics"
+    },
+    {
+      "type": "text",
+      "id": "tab_recent_text",
+      "label": "Recent Reviews Tab Text",
+      "default": "Recent Reviews"
+    },
+    {
+      "type": "header",
+      "content": "Form Labels"
+    },
+    {
+      "type": "text",
+      "id": "name_label",
+      "label": "Name Field Label",
+      "default": "Your Name (Optional)"
+    },
+    {
+      "type": "text",
+      "id": "name_placeholder",
+      "label": "Name Field Placeholder",
+      "default": "Enter your name"
+    },
+    {
+      "type": "text",
+      "id": "comments_label",
+      "label": "Comments Field Label",
+      "default": "Additional Comments (Optional)"
+    },
+    {
+      "type": "text",
+      "id": "comments_placeholder",
+      "label": "Comments Field Placeholder",
+      "default": "Share your thoughts..."
+    },
+    {
+      "type": "text",
+      "id": "submit_button_text",
+      "label": "Submit Button Text",
+      "default": "Submit Review"
+    },
+    {
+      "type": "text",
+      "id": "please_rate_text",
+      "label": "Please Rate All Questions Text",
+      "default": "Please rate all questions"
+    },
+    {
+      "type": "text",
+      "id": "submitting_text",
+      "label": "Submitting Text",
+      "default": "Submitting..."
+    },
+    {
+      "type": "header",
+      "content": "Success Messages"
+    },
+    {
+      "type": "text",
+      "id": "success_title",
+      "label": "Success Title",
+      "default": "Thank you for your review!"
+    },
+    {
+      "type": "text",
+      "id": "success_message",
+      "label": "Success Message",
+      "default": "Your feedback has been submitted successfully."
+    },
+    {
+      "type": "text",
+      "id": "submit_another_text",
+      "label": "Submit Another Review Text",
+      "default": "Submit Another Review"
+    },
+    {
+      "type": "text",
+      "id": "try_again_text",
+      "label": "Try Again Text",
+      "default": "Try Again"
+    },
+    {
+      "type": "header",
+      "content": "Statistics Messages"
+    },
+    {
+      "type": "text",
+      "id": "no_reviews_title",
+      "label": "No Reviews Title",
+      "default": "No Reviews Yet"
+    },
+    {
+      "type": "text",
+      "id": "no_reviews_message",
+      "label": "No Reviews Message",
+      "default": "Be the first to leave a review!"
+    },
+    {
+      "type": "text",
+      "id": "overall_stats_title",
+      "label": "Overall Statistics Title",
+      "default": "Overall Statistics"
+    },
+    {
+      "type": "text",
+      "id": "total_reviews_text",
+      "label": "Total Reviews Text",
+      "default": "Total Reviews"
+    },
+    {
+      "type": "text",
+      "id": "no_recent_reviews_text",
+      "label": "No Recent Reviews Text",
+      "default": "No reviews yet. Be the first to leave a review!"
+    },
+    {
+      "type": "text",
+      "id": "anonymous_text",
+      "label": "Anonymous Text",
+      "default": "Anonymous"
+    },
+    {
+      "type": "text",
+      "id": "question1",
+      "label": "Question 1",
+      "default": "How would you rate your overall experience with the Academy section?"
+    },
+    {
+      "type": "text",
+      "id": "question2",
+      "label": "Question 2",
+      "default": "Was the content easy to follow and understand?"
+    },
+    {
+      "type": "text",
+      "id": "question3",
+      "label": "Question 3",
+      "default": "Were the lessons useful for your career as a stylist?"
+    },
+    {
+      "type": "text",
+      "id": "question4",
+      "label": "Question 4",
+      "default": "How satisfied are you with the page layout and structure?"
+    },
+    {
+      "type": "text",
+      "id": "question5",
+      "label": "Question 5",
+      "default": "Would you recommend our Academy to others?"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Review System",
+      "category": "Customer Feedback"
+    }
+  ]
+}
+{% endschema %} 
