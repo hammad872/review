@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema({
+  // Reviewer name
+  reviewerName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  
   // Dynamic questions array - each question has an ID, text, and rating
   questions: [{
     questionId: {
@@ -18,6 +25,12 @@ const reviewSchema = new mongoose.Schema({
       max: 5
     }
   }],
+  
+  // Comments (optional)
+  comments: {
+    type: String,
+    trim: true
+  },
   
   // Timestamp
   createdAt: {

@@ -8,6 +8,14 @@ router.post('/submit', async (req, res) => {
   try {
     const { questions, comments, reviewerName } = req.body;
 
+    // Validate reviewer name
+    if (!reviewerName || typeof reviewerName !== 'string' || reviewerName.trim().length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Reviewer name is required and must not be empty' 
+      });
+    }
+
     // Validate questions array
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
       return res.status(400).json({ 
@@ -36,7 +44,7 @@ router.post('/submit', async (req, res) => {
     const review = new Review({
       questions,
       comments,
-      reviewerName,
+      reviewerName: reviewerName.trim(),
       ipAddress: req.ip,
       userAgent: req.get('User-Agent')
     });
@@ -160,9 +168,18 @@ router.get('/recent', async (req, res) => {
       .limit(10)
       .select('-ipAddress -userAgent');
 
+    // Handle cases where old reviews might not have reviewerName
+    const processedReviews = reviews.map(review => {
+      const reviewObj = review.toObject();
+      if (!reviewObj.reviewerName) {
+        reviewObj.reviewerName = 'Anonymous';
+      }
+      return reviewObj;
+    });
+
     res.json({
       success: true,
-      data: reviews
+      data: processedReviews
     });
 
   } catch (error) {

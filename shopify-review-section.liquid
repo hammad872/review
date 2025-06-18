@@ -4,7 +4,7 @@
   Questions can be managed from Shopify admin through metafields or settings
 {% endcomment %}
 
-{% assign review_api_url = section.settings.api_url | default: 'http://localhost:3000/' %}
+{% assign review_api_url = section.settings.api_url | default: 'https://review-1-ynth.onrender.com/' %}
 {% assign show_statistics = section.settings.show_statistics %}
 {% assign show_recent_reviews = section.settings.show_recent_reviews %}
 {% assign max_recent_reviews = section.settings.max_recent_reviews | default: 5 %}
@@ -331,6 +331,226 @@
   .submit-btn:hover {
     background: #111 !important;
   }
+
+  .carousel-review {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 24px;
+    margin: 24px auto;
+    max-width: 500px;
+    text-align: center;
+    font-size: 1.1rem;
+  }
+
+  .carousel-review button {
+    background: #222;
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  .carousel-review button:hover {
+    background: #111;
+  }
+
+  .reviews-carousel-section {
+    margin-top: 40px;
+    padding: 30px;
+    background: {{ settings.color_background_secondary }};
+    border-radius: 15px;
+  }
+
+  .reviews-carousel-section h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: {{ settings.color_primary }};
+    font-size: 1.5rem;
+  }
+
+  .carousel-review {
+    background: {{ settings.color_background }};
+    border-radius: 15px;
+    padding: 30px;
+    margin: 20px auto;
+    max-width: 600px;
+    text-align: center;
+    font-size: 1.1rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-left: 4px solid {{ settings.color_primary }};
+  }
+
+  .carousel-reviewer-name {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: {{ settings.color_primary }};
+    margin-bottom: 10px;
+  }
+
+  .carousel-review-date {
+    font-size: 0.9rem;
+    color: {{ settings.color_text }};
+    opacity: 0.7;
+    margin-bottom: 20px;
+  }
+
+  .carousel-questions {
+    margin-bottom: 20px;
+  }
+
+  .carousel-question {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: {{ settings.color_background_secondary }};
+    border-radius: 8px;
+  }
+
+  .carousel-question-text {
+    font-weight: 500;
+    color: {{ settings.color_text }};
+    margin-bottom: 8px;
+    font-size: 1rem;
+  }
+
+  .carousel-rating {
+    color: #ffd700;
+    font-size: 1.2rem;
+  }
+
+  .carousel-comments {
+    background: {{ settings.color_background_secondary }};
+    padding: 15px;
+    border-radius: 8px;
+    font-style: italic;
+    color: {{ settings.color_text }};
+    margin-top: 15px;
+  }
+
+  .carousel-navigation {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+
+  .carousel-nav-btn {
+    background: {{ settings.color_primary }};
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .carousel-nav-btn:hover:not(:disabled) {
+    background: {{ settings.color_primary | color_darken: 10 }};
+  }
+
+  .carousel-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .carousel-counter {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: {{ settings.color_text }};
+    opacity: 0.7;
+  }
+
+  .carousel-slider {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .carousel-slide {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .carousel-review-card {
+    background: {{ settings.color_background }};
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    font-size: 1rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-left: 4px solid {{ settings.color_primary }};
+    height: fit-content;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .carousel-review-card .carousel-reviewer-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: {{ settings.color_primary }};
+    margin-bottom: 8px;
+  }
+
+  .carousel-review-card .carousel-review-date {
+    font-size: 0.8rem;
+    color: {{ settings.color_text }};
+    opacity: 0.7;
+    margin-bottom: 15px;
+  }
+
+  .carousel-review-card .carousel-questions {
+    flex: 1;
+    margin-bottom: 15px;
+  }
+
+  .carousel-review-card .carousel-question {
+    margin-bottom: 10px;
+    padding: 8px;
+    background: {{ settings.color_background_secondary }};
+    border-radius: 6px;
+  }
+
+  .carousel-review-card .carousel-question-text {
+    font-weight: 500;
+    color: {{ settings.color_text }};
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+  }
+
+  .carousel-review-card .carousel-rating {
+    color: #ffd700;
+    font-size: 1rem;
+  }
+
+  .carousel-review-card .carousel-comments {
+    background: {{ settings.color_background_secondary }};
+    padding: 10px;
+    border-radius: 6px;
+    font-style: italic;
+    color: {{ settings.color_text }};
+    font-size: 0.9rem;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 1024px) {
+    .carousel-slide {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .carousel-slide {
+      grid-template-columns: 1fr;
+    }
+    
+    .carousel-review-card {
+      min-height: auto;
+    }
+  }
 </style>
 
 <div class="review-system">
@@ -438,17 +658,23 @@
       return;
     }
 
-    container.innerHTML = questions.map(question => `
-      <div class="question-group">
-        <div class="question-text">${question.questionText}</div>
-        <div class="star-rating" data-question-id="${question.questionId}">
-          ${[1, 2, 3, 4, 5].map(star => `
-            <span class="star" data-rating="${star}" onclick="setRating('${question.questionId}', ${star})">★</span>
-          `).join('')}
-        </div>
-        <div class="rating-label">Click to rate from 1 to 5 stars</div>
+    container.innerHTML = `
+      <div class="form-group">
+        <label for="reviewer-name">{{ section.settings.name_label | default: "Your Name" }}</label>
+        <input type="text" id="reviewer-name" placeholder="{{ section.settings.name_placeholder | default: "Enter your name" }}" required>
       </div>
-    `).join('');
+      ${questions.map(question => `
+        <div class="question-group">
+          <div class="question-text">${question.questionText}</div>
+          <div class="star-rating" data-question-id="${question.questionId}">
+            ${[1, 2, 3, 4, 5].map(star => `
+              <span class="star" data-rating="${star}" onclick="setRating('${question.questionId}', ${star})">★</span>
+            `).join('')}
+          </div>
+          <div class="rating-label">Click to rate from 1 to 5 stars</div>
+        </div>
+      `).join('')}
+    `;
   }
 
   // Set rating for a question
@@ -473,15 +699,16 @@
 
   // Check if all questions are rated
   function checkFormCompletion() {
+    const reviewerName = document.getElementById('reviewer-name')?.value.trim();
     const allRated = questions.every(q => currentRatings[q.questionId]);
     const submitBtn = document.getElementById('submitBtn');
     
-    if (allRated) {
+    if (allRated && reviewerName) {
       submitBtn.disabled = false;
       submitBtn.textContent = '{{ section.settings.submit_button_text | default: "Submit Review" }}';
     } else {
       submitBtn.disabled = true;
-      submitBtn.textContent = '{{ section.settings.please_rate_text | default: "Please rate all questions" }}';
+      submitBtn.textContent = '{{ section.settings.please_rate_text | default: "Please rate all questions and enter your name" }}';
     }
   }
 
@@ -492,14 +719,19 @@
     submitBtn.textContent = '{{ section.settings.submitting_text | default: "Submitting..." }}';
 
     try {
+      const reviewerName = document.getElementById('reviewer-name').value.trim();
+      
+      if (!reviewerName) {
+        throw new Error('Please enter your name');
+      }
+
       const reviewData = {
-        questions: [
-          { questionId: "question1", questionText: "{{ section.settings.question1 }}", rating: 5 },
-          { questionId: "question2", questionText: "{{ section.settings.question2 }}", rating: 4 },
-          { questionId: "question3", questionText: "{{ section.settings.question2 }}", rating: 4 },
-          { questionId: "question4", questionText: "{{ section.settings.question2 }}", rating: 4 },
-          { questionId: "question5", questionText: "{{ section.settings.question2 }}", rating: 4 },
-        ]
+        questions: questions.map(q => ({
+          questionId: q.questionId,
+          questionText: q.questionText,
+          rating: currentRatings[q.questionId]
+        })),
+        reviewerName: reviewerName
       };
 
       const response = await fetch(`${API_BASE_URL}/api/reviews/submit`, {
@@ -589,12 +821,21 @@
       <div class="stats-grid">
         ${questionsHtml}
       </div>
+      <div class="reviews-carousel-section">
+        <h3>{{ section.settings.all_reviews_title | default: "All Customer Reviews" }}</h3>
+        <div id="all-reviews-carousel-container">
+          <div class="loading">Loading all reviews...</div>
+        </div>
+      </div>
     `;
 
     // Create charts
     stats.questions.forEach(question => {
       createChart(question);
     });
+
+    // Load all reviews for carousel
+    loadAllReviewsForCarousel();
   }
 
   // Create chart for a question
@@ -720,7 +961,96 @@
   document.addEventListener('DOMContentLoaded', function() {
     loadQuestions();
     checkFormCompletion();
+    
+    // Add event listener for name field
+    document.addEventListener('input', function(e) {
+      if (e.target.id === 'reviewer-name') {
+        checkFormCompletion();
+      }
+    });
   });
+
+  async function loadAllReviewsForCarousel() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/reviews/recent`);
+      const data = await response.json();
+      if (data.success) {
+        renderAllReviewsCarousel(data.data);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      document.getElementById('all-reviews-carousel-container').innerHTML =
+        `<div class="error">Error loading reviews: ${error.message}</div>`;
+    }
+  }
+
+  function renderAllReviewsCarousel(reviews) {
+    if (!reviews.length) {
+      document.getElementById('all-reviews-carousel-container').innerHTML = 
+        '<div class="loading">No reviews yet.</div>';
+      return;
+    }
+
+    let currentSlide = 0;
+    const reviewsPerSlide = 3;
+    const totalSlides = Math.ceil(reviews.length / reviewsPerSlide);
+
+    function showSlide(slideIndex) {
+      const startIndex = slideIndex * reviewsPerSlide;
+      const endIndex = Math.min(startIndex + reviewsPerSlide, reviews.length);
+      const slideReviews = reviews.slice(startIndex, endIndex);
+
+      const reviewsHtml = slideReviews.map(review => {
+        const questionsHtml = review.questions.map(q => `
+          <div class="carousel-question">
+            <div class="carousel-question-text">${q.questionText}</div>
+            <div class="carousel-rating">${'★'.repeat(q.rating)}${'☆'.repeat(5 - q.rating)}</div>
+          </div>
+        `).join('');
+
+        return `
+          <div class="carousel-review-card">
+            <div class="carousel-reviewer-name">${review.reviewerName || '{{ section.settings.anonymous_text | default: "Anonymous" }}'}</div>
+            <div class="carousel-review-date">${new Date(review.createdAt).toLocaleDateString()}</div>
+            <div class="carousel-questions">
+              ${questionsHtml}
+            </div>
+            ${review.comments ? `<div class="carousel-comments">"${review.comments}"</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('all-reviews-carousel-container').innerHTML = `
+        <div class="carousel-slider">
+          <div class="carousel-slide">
+            ${reviewsHtml}
+          </div>
+          <div class="carousel-navigation">
+            <button class="carousel-nav-btn" onclick="prevSlide()" ${currentSlide === 0 ? 'disabled' : ''}>Previous</button>
+            <button class="carousel-nav-btn" onclick="nextSlide()" ${currentSlide === totalSlides - 1 ? 'disabled' : ''}>Next</button>
+          </div>
+          <div class="carousel-counter">Slide ${currentSlide + 1} of ${totalSlides} (${reviews.length} total reviews)</div>
+        </div>
+      `;
+    }
+
+    window.prevSlide = function() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        showSlide(currentSlide);
+      }
+    };
+    
+    window.nextSlide = function() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        showSlide(currentSlide);
+      }
+    };
+
+    showSlide(currentSlide);
+  }
 </script>
 
 {% schema %}
@@ -944,6 +1274,28 @@
       "id": "question5",
       "label": "Question 5",
       "default": "Would you recommend our Academy to others?"
+    },
+    {
+      "type": "header",
+      "content": "Carousel"
+    },
+    {
+      "type": "text",
+      "id": "carousel_title",
+      "label": "Carousel Title",
+      "default": "What Our Customers Say"
+    },
+    {
+      "type": "text",
+      "id": "carousel_subtitle",
+      "label": "Carousel Subtitle",
+      "default": "Read reviews from our valued customers"
+    },
+    {
+      "type": "text",
+      "id": "all_reviews_title",
+      "label": "All Reviews Title",
+      "default": "All Customer Reviews"
     }
   ],
   "presets": [
