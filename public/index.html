@@ -25,6 +25,7 @@
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: none;
             overflow: hidden;
         }
 
@@ -329,6 +330,46 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .admin-login, .admin-panel {
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border-radius: 20px;
+            background: #fff;
+            padding: 40px 30px;
+            margin: 40px auto;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .admin-login h2, .admin-panel h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .admin-review-list {
+            margin-top: 20px;
+        }
+        .admin-review-item {
+            border-bottom: 1px solid #eee;
+            padding: 18px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+        }
+        .admin-review-actions button {
+            background: #e53e3e;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 18px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+        .admin-review-actions button:hover {
+            background: #b91c1c;
+        }
     </style>
 </head>
 <body>
@@ -382,9 +423,34 @@
         </div>
     </div>
 
+    <div id="admin-login" class="admin-login">
+        <h2>Admin Login</h2>
+        <div class="form-group">
+            <label for="admin-username">Username</label>
+            <input type="text" id="admin-username" placeholder="Enter username">
+        </div>
+        <div class="form-group">
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password" placeholder="Enter password">
+        </div>
+        <button class="submit-btn" onclick="adminLogin()">Login</button>
+        <div id="admin-login-error" class="error" style="display:none;"></div>
+    </div>
+    <div id="admin-panel" class="admin-panel" style="display:none;">
+        <h2 style="text-align:center;margin-bottom:30px;">Admin Review & Question Management</h2>
+        <button class="submit-btn" style="width:auto;float:right;margin-bottom:20px;" onclick="adminLogout()">Logout</button>
+        <div id="admin-review-list" class="admin-review-list"></div>
+        <hr style="margin:40px 0;">
+        <h3 style="color:#667eea;text-align:center;">Edit Questions</h3>
+        <div id="admin-question-list" class="admin-review-list"></div>
+    </div>
+
     <script>
         let questions = [];
         let currentRatings = {};
+        let isAdmin = false;
+        let adminToken = localStorage.getItem('adminToken') || '';
+        let editingReviewId = null;
 
         // Tab functionality
         function showTab(tabName) {
@@ -722,6 +788,137 @@
             loadQuestions();
             checkFormCompletion();
         });
+
+        // Admin login logic
+        function adminLogin() {
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+            fetch('/api/reviews/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.message);
+                adminToken = data.token;
+                localStorage.setItem('adminToken', adminToken);
+                document.getElementById('admin-login').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                loadAdminReviews();
+                loadAdminQuestions();
+            })
+            .catch(err => {
+                document.getElementById('admin-login-error').style.display = 'block';
+                document.getElementById('admin-login-error').textContent = err.message;
+            });
+        }
+        function adminLogout() {
+            adminToken = '';
+            localStorage.removeItem('adminToken');
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('admin-login').style.display = 'block';
+        }
+        function loadAdminReviews() {
+            fetch('/api/reviews/recent', {
+                headers: { 'Authorization': adminToken }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.message);
+                renderAdminReviewList(data.data);
+            })
+            .catch(err => {
+                document.getElementById('admin-review-list').innerHTML = `<div class="error">${err.message}</div>`;
+            });
+        }
+        function renderAdminReviewList(reviews) {
+            const container = document.getElementById('admin-review-list');
+            if (reviews.length === 0) {
+                container.innerHTML = '<div>No reviews found.</div>';
+                return;
+            }
+            container.innerHTML = reviews.map(review => `
+                <div class="admin-review-item">
+                    <div>
+                        <b>${review.reviewerName || 'Anonymous'}</b> <span style="color:#888;">(${new Date(review.createdAt).toLocaleDateString()})</span><br>
+                        ${review.questions.map(q => `${q.questionText}: <b>${q.rating}</b>`).join(' | ')}
+                        ${review.comments ? `<div style='color:#666;font-style:italic;'>"${review.comments}"</div>` : ''}
+                    </div>
+                    <div class="admin-review-actions">
+                        <button onclick="deleteReview('${review._id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function deleteReview(id) {
+            if (!confirm('Are you sure you want to delete this review?')) return;
+            fetch(`/api/reviews/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': adminToken }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.message);
+                loadAdminReviews();
+            })
+            .catch(err => alert('Delete failed: ' + err.message));
+        }
+        // Question editing UI
+        function loadAdminQuestions() {
+            fetch('/api/reviews/questions', {
+                headers: { 'Authorization': adminToken }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.message);
+                renderAdminQuestionList(data.data);
+            })
+            .catch(err => {
+                document.getElementById('admin-question-list').innerHTML = `<div class="error">${err.message}</div>`;
+            });
+        }
+        function renderAdminQuestionList(questions) {
+            const container = document.getElementById('admin-question-list');
+            if (questions.length === 0) {
+                container.innerHTML = '<div>No questions found.</div>';
+                return;
+            }
+            container.innerHTML = questions.map(q => `
+                <div class="admin-review-item">
+                    <input type="text" id="qtext-${q.questionId}" value="${q.questionText.replace(/\"/g, '&quot;')}" style="width:70%;padding:8px;border-radius:6px;border:1px solid #ccc;">
+                    <button onclick="saveQuestion('${q.questionId}')" style="background:#667eea;margin-left:10px;color:#fff;border:none;border-radius:5px;padding:8px 18px;cursor:pointer;font-weight:600;font-size:1rem;transition:background 0.2s;">Save</button>
+                </div>
+            `).join('');
+        }
+        function saveQuestion(questionId) {
+            const text = document.getElementById('qtext-' + questionId).value;
+            fetch(`/api/questions/${questionId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': adminToken
+                },
+                body: JSON.stringify({ questionText: text })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.message);
+                loadAdminQuestions();
+                alert('Question saved successfully!');
+            })
+            .catch(err => alert('Save failed: ' + err.message));
+        }
+        // Show login or panel on load
+        if (adminToken) {
+            document.getElementById('admin-login').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+            loadAdminReviews();
+            loadAdminQuestions();
+        } else {
+            document.getElementById('admin-login').style.display = 'block';
+            document.getElementById('admin-panel').style.display = 'none';
+        }
     </script>
 </body>
 </html> 

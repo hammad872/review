@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Review = require('../models/Review');
 const Question = require('../models/Question');
+const crypto = require('crypto');
+let adminToken = null;
 
 // Submit a new review
 router.post('/submit', async (req, res) => {
@@ -211,4 +213,38 @@ router.get('/questions', async (req, res) => {
   }
 });
 
-module.exports = router; 
+// Admin login endpoint
+router.post('/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === 'admin' && password === 'asAS0909@') {
+    adminToken = crypto.randomBytes(32).toString('hex');
+    return res.json({ success: true, token: adminToken });
+  }
+  return res.status(401).json({ success: false, message: 'Invalid credentials' });
+});
+
+function adminAuth(req, res, next) {
+  const token = req.headers['authorization'];
+  if (!token || token !== adminToken) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+  next();
+}
+
+// Delete a review by ID (admin only)
+router.delete('/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const review = await Review.findById(id);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+    await Review.deleteOne({ _id: id });
+    res.json({ success: true, message: 'Review deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+module.exports = { router, adminAuth }; 

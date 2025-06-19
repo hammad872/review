@@ -16,8 +16,10 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/reviews', require('./routes/reviews'));
+const reviews = require('./routes/reviews');
+app.use('/api/reviews', reviews.router);
 app.use('/api/questions', require('./routes/questions'));
+
 
 // Serve static files
 app.use(express.static('public'));

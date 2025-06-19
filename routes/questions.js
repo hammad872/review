@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Question = require('../models/Question');
+const { adminAuth } = require('./reviews');
 
 // Get all active questions
 router.get('/', async (req, res) => {
@@ -88,7 +89,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update a question
-router.put('/:questionId', async (req, res) => {
+router.put('/:questionId', adminAuth, async (req, res) => {
   try {
     const { questionId } = req.params;
     const { questionText, order, isActive, category } = req.body;
